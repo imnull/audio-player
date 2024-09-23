@@ -1,0 +1,54 @@
+.audio-player-progress-bar {
+    width: 150px;
+    height: 24px;
+    box-sizing: border-box;
+    background-color: #fff;
+    padding: 0 0px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    position: relative;
+    flex: 1;
+
+    .audio-player-progress-bar-line {
+        height: 13px;
+        flex: 1;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        position: relative;
+        margin: 0 10px;
+        cursor: pointer;
+
+        &::before {
+            content: ' ';
+            background-color: #ccc;
+            position: absolute;
+            width: 100%;
+            height: 1px;
+        }
+
+        .audio-player-progress-bar-handler {
+            height: 13px;
+            width: 6px;
+            margin-left: -3px;
+            background-color: rgba(0, 0, 0, 0.2);
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+
+    }
+
+    .audio-player-progress-bar-input {
+        flex: 1;
+        opacity: 0;
+        position: absolute;
+        left: 0;
+        right: 0;
+        cursor: pointer;
+    }
+
+}

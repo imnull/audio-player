@@ -1,0 +1,14 @@
+.audio-player-button {
+    position: relative;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    flex-shrink: 0;
+    cursor: pointer;
+    &.audio-player-button-disabled {
+        pointer-events: none;
+    }
+}
