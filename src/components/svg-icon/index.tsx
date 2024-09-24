@@ -31,6 +31,11 @@ const GenMap = {
     play: svgGen(`<path d="M20 12L5 21V3z" />`),
     stop: svgGen(`<rect width="14" height="14" x="5" y="5" />`),
     pause: svgGen(`<rect width="4" height="16" x="5" y="4" /><rect width="4" height="16" x="15" y="4" />`),
+    close: (options: TGenSvgOptions) => {
+        const gen = svgGen(`<path d="M6.34314575 6.34314575L17.6568542 17.6568542M6.34314575 17.6568542L17.6568542 6.34314575" />`)
+        const { fillStyle = DEFAULT_FILL, size = DEFAULT_SIZE } = options
+        return gen({ size, strokeSize: 0.5, strokeStyle: fillStyle })
+    },
     // addToList: (options: TGenSvgOptions) => {
     //     const gen = svgGen(`<path d="M6 10H18" /><path d="M6 6H18" /><path d="M6 14H10" /><path d="M14 16H18" /><path d="M16 14L16 18" /><path d="M6 18H10" />`)
     //     const { fillStyle = DEFAULT_FILL, size = DEFAULT_SIZE } = options

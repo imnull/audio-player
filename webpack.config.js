@@ -1,15 +1,16 @@
 const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
+const CopyPlugin = require('copy-webpack-plugin')
 
 module.exports = options => {
-    const {} = options
+    const { WEBPACK_SERVE } = options
 
     return {
-        mode: 'development',
+        mode: WEBPACK_SERVE ? 'development' : 'production',
         entry: path.resolve(__dirname, './src/index.tsx'),
         output: {
-            path: path.resolve(__dirname, 'dist')
+            path: path.resolve(__dirname, 'docs')
         },
         module: {
             rules: [
@@ -43,12 +44,19 @@ module.exports = options => {
                 template: path.resolve(__dirname, './src/template.html'),
                 filename: 'index.html',
                 hash: true,
+            }),
+            new CopyPlugin({
+                patterns: [
+                    {
+                        from: path.resolve(__dirname, 'statics'), // 源目录
+                    }
+                ],
             })
         ],
         devServer: {
             port: 3031,
             hot: true,
-            static: path.resolve(__dirname, './static')
+            static: path.resolve(__dirname, './statics')
         }
     }
 }

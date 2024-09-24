@@ -1,12 +1,23 @@
 .audio-player-play-bar {
     min-width: 200px;
     height: 24px;
-    padding: 2px;
-    background-color: #ccc;
+    padding: 3px;
+    background-color: #fff;
     box-shadow: 0 0 15px 2px rgba(0,0,0,0.1);
 
     .button-group {
         display: flex;
         flex-direction: row;
+    }
+    .timer {
+        font-family: monospace;
+        color: #aaa;
+        font-size: 10px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        user-select: none;
+        cursor: pointer;
+        margin-right: 4px;
     }
 }

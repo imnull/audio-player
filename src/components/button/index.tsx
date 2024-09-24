@@ -24,7 +24,8 @@ export default (props: {
     return <div
         className={`audio-player-button ${disabled ? 'audio-player-button-disabled' : ''}`}
         style={{ width: size, height: size, backgroundColor }}
-        onClick={() => {
+        onClick={e => {
+            e.stopPropagation()
             typeof onTap === 'function' && onTap()
         }}
     >

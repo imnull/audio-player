@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import './index.scss'
 
 export default (props: {
+    size?: number;
     progress?: number;
     onChange?: (progress: number) => void
 }) => {
-    const { progress = 0, onChange } = props
+    const { progress = 0, size = 24, onChange } = props
     
     const [value, setValue] = useState(progress)
     const [holdon, setHoldon] = useState(false)
@@ -18,7 +19,7 @@ export default (props: {
     }, [holdon, progress])
 
     return (
-        <div className="audio-player-progress-bar">
+        <div className="audio-player-progress-bar" style={{ height: size }}>
             <div className="audio-player-progress-bar-line">
                 <div className="audio-player-progress-bar-handler" style={{ left: `${value * 100}%` }}></div>
             </div>

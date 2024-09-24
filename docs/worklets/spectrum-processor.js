@@ -1,0 +1,1 @@
+class SpectrumProcessor extends AudioWorkletProcessor{process(s,r,e){const o=s[0][0]||0;return this.port.postMessage(o),!0}}registerProcessor("spectrum-processor",SpectrumProcessor);

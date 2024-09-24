@@ -1,51 +1,37 @@
-import { useEffect, useState } from 'react'
-import { AudioMaster, AudioGraphicsPlugin, drawFrequency } from '~/libs/audio-player'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { AudioGraphicsPlugin, AudioMaster, drawFrequency } from '~/libs/audio-player'
 import PlayBar, { TPlayStatus } from '~/components/play-bar'
+import PlayList from '~/components/play-list'
+import { TPlayListItem, updateCacheList, getCacheList, removeAudioFromIndexedDB } from '~/libs/audio-player/utils'
+import './index.scss'
 
-const initDnD = (dropArea: HTMLElement, callback: (files: File[]) => void) => {
-
-    const preventDefaults = (e: Event) => {
-        e.preventDefault()
-        e.stopPropagation()
-    }
-
-    const handleDrop = (e: any) => {
-        const dt = e.dataTransfer;
-        const files: File[] = dt.files.length ? Array.from(dt.files) : [];
-        console.log(1111111, files)
-        callback(files)
-    }
-
-    // 阻止默认的拖拽行为
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, preventDefaults, false);
-    });
-
-    // 当拖拽文件进入/悬停/离开时，修改样式
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropArea.addEventListener(eventName, () => dropArea.classList.add('highlight'), false);
-    });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, () => dropArea.classList.remove('highlight'), false);
-    });
-
-    // 处理文件拖放
-    dropArea.addEventListener('drop', handleDrop, false);
-}
-
-
-export default (props: {
-    master: AudioMaster
+export const PlayerCore = (props: {
+    master: AudioMaster;
+    width?: number;
 }) => {
 
-    const { master } = props
+    const { master, width = 420 } = props
 
+    const [list, setList] = useState<TPlayListItem[]>([])
     const [playStatus, setPlayStatus] = useState<TPlayStatus>('waiting')
+    const listRef = useRef(list)
+    useEffect(() => {
+        listRef.current = list; // 每次 list 更新时，更新 ref 的值
+        if(list.length > 0 && playStatus === 'waiting') {
+            setPlayStatus('ready')
+        }
+    }, [list, playStatus])
+
+    const [current, setCurrent] = useState(0)
+    const currentRef = useRef(current)
+    useEffect(() => {
+        currentRef.current = current
+    }, [current])
+
+    const [duration, setDuration] = useState(0)
     const [track] = useState(master.createPlayerTrack({
         onEnded: () => {
-            setPlayStatus('ready')
-            setProgress(0)
+            play(currentRef.current + 1)
         },
         onStart: () => {
             // setPlayStatus('playing')
@@ -54,80 +40,144 @@ export default (props: {
             setProgress(percent)
         }
     }))
-    const [src, setSrc] = useState('')
 
     const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null)
     const [progress, setProgress] = useState(0)
-
-    const [listDom, setListDom] = useState<HTMLElement | null>(null)
-    const [files, setFiles] = useState<File[]>([])
 
     useEffect(() => {
         if (!canvas) {
             return
         }
         const ctx = canvas.getContext('2d')
-        if(ctx) {
+        if (ctx) {
             master.on<Uint8Array>('AudioGraphicsPlugin', data => {
                 drawFrequency(ctx, data)
             })
         }
     }, [master, canvas])
 
-    useEffect(() => {
-        if (listDom) {
-            initDnD(listDom, setFiles)
-        }
-    }, [listDom])
+    
 
     useEffect(() => {
-        if(!src) {
-            return
-        }
-        track.play(src).then(() => {
-            setPlayStatus('playing')
+        getCacheList().then(list => {
+            setList(list)
+            if(list.length > 0) {
+                setPlayStatus('ready')
+            } else {
+                setPlayStatus('waiting')
+            }
         })
-    }, [src])
-
-    useEffect(() => {
         return () => {
-            track.stop()
+            track.pause()
             track.disconnect()
         }
     }, [])
 
+    const play = (cur: number) => {
+        if(listRef.current.length < 1) {
+            return
+        }
+        if(cur < 0) {
+            cur += listRef.current.length
+        }
+        cur = cur % listRef.current.length
+        setCurrent(cur)
+        const item = listRef.current[cur]
+        if(item) {
+            setPlayStatus('waiting')
+            track.play(item.url).then(() => {
+                setPlayStatus('playing')
+                setDuration(track.getDuration())
+            })
+        }
+    }
 
-    return <div className="audiu-player-wrapper">
-        <canvas ref={setCanvas} width={500} height={120} style={{ border: '1px solid #ccc' }} />
-        <hr />
+    return <div className="audiu-player-wrapper" style={{ width }}>
+        <canvas className="" ref={setCanvas} width={width} height={60} />
         <PlayBar
             status={playStatus}
+            duration={duration}
             progress={progress}
+            previous={list.length > 1 && playStatus !== 'waiting'}
+            next={list.length > 1 && playStatus !== 'waiting'}
             onClickPlay={() => {
-                track.play(src).then(() => {
-                    setPlayStatus('playing')
-                })
+                play(current)
             }}
             onClickStop={() => {
-                track.stop()
+                track.pause()
                 setPlayStatus('ready')
             }}
             onChangeProgress={percent => {
-                console.log(211111, percent)
                 setProgress(percent)
                 track.seek(percent)
             }}
+            onClickNext={() => {
+                play(current + 1)
+            }}
+            onClickPrevious={() => {
+                play(current - 1)
+            }}
         />
-        <ul className="list" ref={setListDom}>
-            {
-                files.length > 0
-                ? files.map((file, idx) => <li key={idx} onDoubleClick={async () => {
-                    const url = URL.createObjectURL(file)
-                    setSrc(url)
-                    setPlayStatus('waiting')
-                }}>{file.name}</li>)
-                : <li style={{ color: '#ccc' }}>drag mp3 files to here</li>
+        <PlayList
+            list={list}
+            width={width}
+            current={current}
+            onSelect={idx => {
+                setCurrent(idx)
+            }}
+            onRemove={(idx, item) => {
+                list.splice(idx, 1)
+                setList([...list])
+                updateCacheList(list)
+                removeAudioFromIndexedDB(item.id)
+
+                if(idx === current) {
+                    track.pause()
+                    if(list.length > 0) {
+                        play(current % list.length)
+                    } else {
+                        setPlayStatus('waiting')
+                    }
+                }
+                
+            }}
+            onChange={list => {
+                setList(list)
+                updateCacheList(list)
+            }}
+        />
+    </div>
+}
+
+const Loading = () => {
+    return <div className="audio-player-loading">Loading</div>
+}
+
+const Enter = (props: {
+    onClick?: () => void;
+}) => {
+    const { onClick } = props
+    return <div className="audio-player-enter" onClick={onClick}>Enter</div>
+}
+
+export default (props: {
+    width?: number;
+}) => {
+    const { width = 320 } = props
+
+    const [master, setMaster] = useState<AudioMaster | null>(null)
+
+
+    return <div>
+        {master ? <PlayerCore master={master} width={width} /> : <Enter onClick={() => {
+            const master = new AudioMaster()
+            const analyzePlugin = new AudioGraphicsPlugin(master.getContext())
+            analyzePlugin.fftSize = 64
+            master.registPlugin(analyzePlugin)
+            setMaster(master)
+            return () => {
+                master.reset()
             }
-        </ul>
+        }} />}
     </div>
 }

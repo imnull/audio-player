@@ -61,10 +61,11 @@ export type TTrack = {
 
 export interface IAudioElementTrack {
     play(src: string): Promise<void>;
-    stop(): void;
+    pause(): void;
     seek(percent: number): number;
-    connect: (destination: AudioNode) => void;
-    disconnect: () => void;
+    connect(destination: AudioNode): void;
+    disconnect(): void;
+    getDuration(): number
 }
 
 // export class AudioBufferTrack implements IAudioTrack {
@@ -127,6 +128,7 @@ export class AudioElementTrack implements IAudioElementTrack {
     private readonly audio: HTMLAudioElement
 
     onStart?: () => void;
+    onPause?: () => void;
     onEnded?: () => void;
     onError?: (err: any) => void;
     onProgress?: (percent: number) => void;
@@ -159,6 +161,13 @@ export class AudioElementTrack implements IAudioElementTrack {
         return true
     }
 
+    getDuration() {
+        if(isNaN(this.audio.duration)) {
+            return 0
+        }
+        return this.audio.duration
+    }
+
     seek(percent: number) {
         if (!this.canSeek()) {
             return 0
@@ -177,10 +186,10 @@ export class AudioElementTrack implements IAudioElementTrack {
         await this.audio.play()
         typeof this.onStart === 'function' && this.onStart()
     }
-    stop() {
+    pause() {
         this.audio.pause()
-        this.audio.currentTime = 0
-        typeof this.onEnded === 'function' && this.onEnded()
+        // this.audio.currentTime = 0
+        typeof this.onPause === 'function' && this.onPause()
     }
 
     connect(destination: AudioNode) {
@@ -264,7 +273,7 @@ export class AudioMaster {
 
     private invokePluginCallbacks(data: any, name: string) {
         const { [name]: callback } = this.pluginCallbackMap
-        if(callback) {
+        if (callback) {
             callback(data, name)
         }
     }
