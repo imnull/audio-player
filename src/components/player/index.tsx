@@ -123,7 +123,7 @@ export const PlayerCore = (props: {
             width={width}
             current={current}
             onSelect={idx => {
-                setCurrent(idx)
+                play(idx)
             }}
             onRemove={(idx, item) => {
                 list.splice(idx, 1)
